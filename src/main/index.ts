@@ -22,6 +22,8 @@ const createWindow = async () => {
   mainWindow.setMaximumSize(10000, 10000);
   mainWindow.setMinimumSize(400, 400);
   mainWindow.maximize();
+  
+  (mainWindow as any).args = process.argv;
 
   let url = isDevMode
     ? 'http://localhost:9080'

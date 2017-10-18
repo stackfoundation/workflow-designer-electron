@@ -2,15 +2,15 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { useStrict, action } from 'mobx';
 let injectSheet = require('@tiagoroldao/react-jss').default;
-let PrismCode = require('react-prism').PrismCode;
-const Download = require('react-icons/lib/fa/download');
-const Loadable = require('react-loadable');
+
+import 'codemirror/lib/codemirror.css';
+import 'codemirror/theme/elegant.css';
 
 let jss: any = require('@tiagoroldao/react-jss').jss,
-JssProvider: any = require('@tiagoroldao/react-jss').JssProvider,
-ThemeProvider: any = require('@tiagoroldao/react-jss').ThemeProvider,
-jssComposer: any = require('jss-compose').default,
-jssNested: any = require('jss-nested').default;
+    JssProvider: any = require('@tiagoroldao/react-jss').JssProvider,
+    ThemeProvider: any = require('@tiagoroldao/react-jss').ThemeProvider,
+    jssComposer: any = require('jss-compose').default,
+    jssNested: any = require('jss-nested').default;
 
 import 'purecss/build/pure.css';
 import 'purecss/build/grids-responsive.css';
@@ -23,11 +23,23 @@ import { WorkflowEditor } from '../../../../common/workflow-tools/workflow-edito
 import { WorkflowService } from '../../../../common/workflow-tools/workflow-editor/src/services/workflow_service';
 import { saveWorkflow } from '../../../../common/workflow-tools/workflow-loader/workflow-loader';
 import { CodeEditor } from './code-editor';
+import { EditorBar } from './editor-bar';
+
+import 'codemirror/mode/yaml/yaml';
+const CodeMirror = require('react-codemirror');
+
+var electron = require('electron');
+var currentWindow = electron.remote.getCurrentWindow();
 
 jss.use(jssComposer());
 jss.use(jssNested());
 
 const styles = (theme: any) => ({
+    editorContainer: {
+    },
+    editorBody: {
+        padding: '70px 0 0 0',
+    },
     downloadSection: {
         composes: 'links',
         padding: '0 20px 0 0'
@@ -42,8 +54,16 @@ const styles = (theme: any) => ({
     }
 });
 
+interface DesignerState {
+    projectName: string;
+    projectPath: string;
+    workflowName: string;
+    yaml: boolean;
+    code: string;
+}
+
 @injectSheet(styles)
-export class DesignerScreen extends React.Component<{ classes?: any }, { workflow: string }> {
+export class DesignerScreen extends React.Component<{ classes?: any }, DesignerState> {
     private editorState: EditorState;
 
     constructor(props: { classes?: any }) {
@@ -61,12 +81,26 @@ export class DesignerScreen extends React.Component<{ classes?: any }, { workflo
 
         state.workflow = new Workflow({});
         state.ide = false;
+        state.sfLinkFactory = (link, text) => <a href="#" onClick={_ => electron.shell.openExternal('https://stack.foundation/#!' + link)}>{text}</a>
 
         this.editorState = state;
     }
 
     public render() {
-        return <WorkflowEditor state={this.editorState} />;
+        let classes = this.props.classes || {};
+        return <div className={classes.editorContainer}>
+            <EditorBar />
+            <div className={classes.editorBody}>
+                {(!this.state || !this.state.yaml) &&
+                    <WorkflowEditor state={this.editorState} workflow={this.editorState.workflow} />}
+                {this.state && this.state.yaml &&
+                    <CodeMirror
+                        className={classes.editor}
+                        value={this.state ? this.state.code : ''}
+                        /* onChange={(code: any) => this.updateCode(code)} */
+                        options={{ lineNumbers: true, mode: 'yaml', theme: 'elegant', indentWithTabs: true, tabSize: 2 }} />}
+            </div>
+        </div >;
     }
 }
 
