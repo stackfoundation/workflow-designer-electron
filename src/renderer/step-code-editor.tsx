@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { action } from 'mobx';
+import { observer } from 'mobx-react';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/theme/pastel-on-dark.css';
 let injectSheet = require('@tiagoroldao/react-jss').default;
-const CodeMirror = require('react-codemirror');
+import {Controlled as CodeMirror} from 'react-codemirror2';
 import 'codemirror/mode/shell/shell';
 
 import { WorkflowStepSimple } from '../../../../common/workflow-tools/workflow-editor/src/models/workflow';
@@ -22,7 +23,8 @@ interface CodeEditorProps {
 }
 
 @injectSheet(styles)
-export class CodeEditor extends React.Component<CodeEditorProps, { }> {
+@observer
+export class StepCodeEditor extends React.Component<CodeEditorProps, {}> {
     constructor(props: CodeEditorProps) {
         super(props);
     }
@@ -34,10 +36,11 @@ export class CodeEditor extends React.Component<CodeEditorProps, { }> {
 
     public render() {
         let classes = this.props.classes || {};
+        let script = (this.props.step as any)[this.props.fieldName];
         return (<CodeMirror
             className={classes.editor}
-            value={(this.props.step as any)[this.props.fieldName]}
-            onChange={(code: any) => this.updateCode(code)}
+            value={script}
+            onBeforeChange={(_, __, code: string) => this.updateCode(code)}
             options={{ lineNumbers: true, mode: 'shell', theme: 'pastel-on-dark' }} />);
     }
 }

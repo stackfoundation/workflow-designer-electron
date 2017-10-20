@@ -1,6 +1,9 @@
+import * as fs from 'fs';
+
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { useStrict, action } from 'mobx';
+import { useStrict, observable } from 'mobx';
+import { observer } from 'mobx-react';
 let injectSheet = require('@tiagoroldao/react-jss').default;
 
 import 'codemirror/lib/codemirror.css';
@@ -16,20 +19,15 @@ import 'purecss/build/pure.css';
 import 'purecss/build/grids-responsive.css';
 import './less/website.less';
 
-import { EditorState } from '../../../../common/workflow-tools/workflow-editor/src/models/state';
 import { CustomInputIO } from '../../../../common/workflow-tools/workflow-editor/src/models/custom-input';
-import { Workflow, WorkflowStepSimple, WorkflowStepCompound } from '../../../../common/workflow-tools/workflow-editor/src/models/workflow';
 import { WorkflowEditor } from '../../../../common/workflow-tools/workflow-editor/src/components/workflow-editor';
-import { WorkflowService } from '../../../../common/workflow-tools/workflow-editor/src/services/workflow_service';
-import { saveWorkflow } from '../../../../common/workflow-tools/workflow-loader/workflow-loader';
-import { CodeEditor } from './code-editor';
 import { EditorBar } from './editor-bar';
+import { DesignerState } from './designer-state';
 
 import 'codemirror/mode/yaml/yaml';
-const CodeMirror = require('react-codemirror');
+import {Controlled as CodeMirror} from 'react-codemirror2';
 
 var electron = require('electron');
-var currentWindow = electron.remote.getCurrentWindow();
 
 jss.use(jssComposer());
 jss.use(jssNested());
@@ -39,6 +37,11 @@ const styles = (theme: any) => ({
     },
     editorBody: {
         padding: '70px 0 0 0',
+    },
+    editor: {
+        composes: 'editor',
+        fontFamily: 'Courier New',
+        fontSize: '16px'
     },
     downloadSection: {
         composes: 'links',
@@ -54,51 +57,59 @@ const styles = (theme: any) => ({
     }
 });
 
-interface DesignerState {
-    projectName: string;
-    projectPath: string;
-    workflowName: string;
-    yaml: boolean;
-    code: string;
-}
-
 @injectSheet(styles)
-export class DesignerScreen extends React.Component<{ classes?: any }, DesignerState> {
-    private editorState: EditorState;
+@observer
+export class DesignerScreen extends React.Component<{ classes?: any }, {}> {
+    @observable private designerState: DesignerState = new DesignerState();
 
     constructor(props: { classes?: any }) {
         super(props);
-
         useStrict(true);
+    }
 
-        let state = new EditorState();
+    private setMode(yamlMode: boolean) {
+        this.designerState.setMode(yamlMode);
+    }
 
-        state.scriptEditorFactory = (step: WorkflowStepSimple, fieldName: string) =>
-            <CodeEditor step={step} fieldName={fieldName} />;
+    private openWorkflow(workflow: string) {
+        if (this.designerState.dirty) {
+            let currentWindow = electron.remote.getCurrentWindow();
+            let response = electron.remote.dialog.showMessageBox(currentWindow, { 
+                type: 'warning',
+                buttons: ['Yes', 'No'],
+                defaultId: 0,
+                cancelId: -1,
+                title: 'Workflow modified',
+                message: 'Do you want to save changes to the current workflow?'
+            });
 
-        new WorkflowService().getWorkflowImagesCatalog()
-            .then(response => state.setCatalog(response));
+            if (response == -1) {
+                return;
+            } else if (response == 0) {
+                this.designerState.saveWorkflow();
+            }
+        }
 
-        state.workflow = new Workflow({});
-        state.ide = false;
-        state.sfLinkFactory = (link, text) => <a href="#" onClick={_ => electron.shell.openExternal('https://stack.foundation/#!' + link)}>{text}</a>
-
-        this.editorState = state;
+        this.designerState.openWorkflow(workflow);
     }
 
     public render() {
         let classes = this.props.classes || {};
         return <div className={classes.editorContainer}>
-            <EditorBar />
+            <EditorBar
+                modeChanged={yaml => this.setMode(yaml)}
+                workflowOpened={workflow => this.openWorkflow(workflow)}
+                save={() => this.designerState.saveWorkflow()}
+                dirty={this.designerState.dirty} />
             <div className={classes.editorBody}>
-                {(!this.state || !this.state.yaml) &&
-                    <WorkflowEditor state={this.editorState} workflow={this.editorState.workflow} />}
-                {this.state && this.state.yaml &&
+                {!this.designerState.yamlMode &&
+                    <WorkflowEditor state={this.designerState.editorState} workflow={this.designerState.editorState.workflow} />}
+                {this.designerState.yamlMode &&
                     <CodeMirror
                         className={classes.editor}
-                        value={this.state ? this.state.code : ''}
-                        /* onChange={(code: any) => this.updateCode(code)} */
-                        options={{ lineNumbers: true, mode: 'yaml', theme: 'elegant', indentWithTabs: true, tabSize: 2 }} />}
+                        value={this.designerState.yaml}
+                        onBeforeChange={(_, __, yaml: string) => this.designerState.updateYaml(yaml)}
+                        options={{ lineNumbers: true, mode: 'yaml', theme: 'elegant', indentWithTabs: false, tabSize: 2 }} />}
             </div>
         </div >;
     }
