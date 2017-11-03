@@ -1,9 +1,11 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { enableLiveReload } from 'electron-compile';
 
 import { initMenu } from './menu';
 
 let mainWindow: Electron.BrowserWindow | null = null;
+
+let fileDirty = false;
 
 const isDevMode = process.execPath.match(/[\\/]electron/);
 
@@ -11,13 +13,15 @@ if (isDevMode) {
   // enableLiveReload({strategy: 'react-hmr'});
 }
 
+app.setName('StackFoundation Designer');
+
 const createWindow = async () => {
   initMenu();
 
   mainWindow = new BrowserWindow({
     show: false,
     minWidth: 600,
-    titleBarStyle: 'hidden-inset'
+    title: "Workflow Editor"
   });
   mainWindow.setMaximumSize(10000, 10000);
   mainWindow.setMinimumSize(400, 400);
@@ -42,6 +46,10 @@ const createWindow = async () => {
     mainWindow = null;
   });
 };
+
+ipcMain.on('quit', (event:any) => {
+  app.quit();
+})
 
 app.on('ready', createWindow);
 

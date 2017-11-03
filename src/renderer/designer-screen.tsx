@@ -28,6 +28,7 @@ import 'codemirror/mode/yaml/yaml';
 import {Controlled as CodeMirror} from 'react-codemirror2';
 
 var electron = require('electron');
+var currentWindow = electron.remote.getCurrentWindow();
 
 jss.use(jssComposer());
 jss.use(jssNested());
@@ -36,12 +37,25 @@ const styles = (theme: any) => ({
     editorContainer: {
     },
     editorBody: {
-        padding: '70px 0 0 0',
+        padding: '63px 0 0 0',
     },
     editor: {
         composes: 'editor',
         fontFamily: 'Courier New',
-        fontSize: '16px'
+        fontSize: '16px',
+
+        '& .CodeMirror': {
+            position: 'fixed',
+            top: '53px',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 'auto'
+        },
+
+        '& .CodeMirror-lines': {
+            paddingTop: '30px'
+        }
     },
     downloadSection: {
         composes: 'links',
@@ -54,6 +68,19 @@ const styles = (theme: any) => ({
     title: {
         fontWeight: '700',
         margin: '40px 0 10px 0'
+    },
+    errAlert: {
+        position: 'fixed',
+        top: '53px',
+        right: 0,
+        left: 0,
+        zIndex: 1,
+        background: '#ffae9c',
+        color: '#730f0f',
+        display: 'block',
+        textAlign: 'center',
+        padding: '3px',
+        borderBottom: '2px solid #ca1212',
     }
 });
 
@@ -67,11 +94,28 @@ export class DesignerScreen extends React.Component<{ classes?: any }, {}> {
         useStrict(true);
     }
 
+    public componentDidMount() {
+        if ((currentWindow as any).args) {
+            let args = (currentWindow as any).args;
+            if (args.length && args.length > 1) {
+                try {
+                    if (fs.statSync(args[1]).isFile()) {
+                        this.designerState.openWorkflow(args[1]);
+                    }
+                } catch (e) { }
+            }
+        }
+    }
+
+    componentWillUnmount() {
+        this.designerState.onDestroy();
+    }
+
     private setMode(yamlMode: boolean) {
         this.designerState.setMode(yamlMode);
     }
 
-    private openWorkflow(workflow: string) {
+    private runDirtyFileCheck (): boolean {
         if (this.designerState.dirty) {
             let currentWindow = electron.remote.getCurrentWindow();
             let response = electron.remote.dialog.showMessageBox(currentWindow, { 
@@ -84,31 +128,37 @@ export class DesignerScreen extends React.Component<{ classes?: any }, {}> {
             });
 
             if (response == -1) {
-                return;
+                return false;
             } else if (response == 0) {
                 this.designerState.saveWorkflow();
             }
         }
 
-        this.designerState.openWorkflow(workflow);
+        return true
     }
 
     public render() {
         let classes = this.props.classes || {};
         return <div className={classes.editorContainer}>
             <EditorBar
+                uiState={this.designerState.uiState}
                 modeChanged={yaml => this.setMode(yaml)}
-                workflowOpened={workflow => this.openWorkflow(workflow)}
+                openWorkflow={(workflow) => this.designerState.openWorkflow(workflow)}
+                newWorkflow={() => this.designerState.newWorkflow()}
                 save={() => this.designerState.saveWorkflow()}
                 dirty={this.designerState.dirty} />
+            {this.designerState.uiState.yamlError && 
+                <div className={classes.errAlert}>
+                    An error occured while parsing the yaml content. Please review your workflow file.
+                </div>}
             <div className={classes.editorBody}>
-                {!this.designerState.yamlMode &&
+                {!this.designerState.uiState.yaml &&
                     <WorkflowEditor state={this.designerState.editorState} workflow={this.designerState.editorState.workflow} />}
-                {this.designerState.yamlMode &&
+                {this.designerState.uiState.yaml &&
                     <CodeMirror
                         className={classes.editor}
                         value={this.designerState.yaml}
-                        onBeforeChange={(_: any, __: any, yaml: string) => this.designerState.updateYaml(yaml)}
+                        onBeforeChange={(_: any, __: any, yaml: string) => this.designerState.updateYaml(yaml, true)}
                         options={{ lineNumbers: true, mode: 'yaml', theme: 'elegant', indentWithTabs: false, tabSize: 2 }} />}
             </div>
         </div >;

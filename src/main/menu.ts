@@ -1,30 +1,102 @@
-import { app, Menu } from 'electron';
+import { app, Menu, BrowserWindow } from 'electron';
 
 import { DEBUG } from './constants';
 import { translator } from './translate';
 
 export function initMenu() {
+    
+    const template: any[] = [
+        {
+            label: 'File',
+            submenu: [
+                {
+                    label: 'New Workflow',
+                    accelerator: 'CmdOrCtrl+N',                    
+                    click () {
+                        let focusedWindow = BrowserWindow.getFocusedWindow();
+
+                        if (focusedWindow) {
+                            focusedWindow.webContents.send('new');
+                        }
+                    }
+                },
+                {
+                    label: 'Open...',
+                    accelerator: 'CmdOrCtrl+O',                    
+                    click () {
+                        let focusedWindow = BrowserWindow.getFocusedWindow();
+
+                        if (focusedWindow) {
+                            focusedWindow.webContents.send('open');
+                        }
+                    }
+                },
+                {
+                    label: 'Save Workflow',
+                    accelerator: 'CmdOrCtrl+S',                    
+                    click () {
+                        let focusedWindow = BrowserWindow.getFocusedWindow();
+
+                        if (focusedWindow) {
+                            focusedWindow.webContents.send('save');
+                        }
+                    }
+                },
+                {
+                    label: 'Save Workflow As...',
+                    accelerator: 'CmdOrCtrl+Shift+S',                    
+                    click () {
+                        let focusedWindow = BrowserWindow.getFocusedWindow();
+
+                        if (focusedWindow) {
+                            focusedWindow.webContents.send('saveAs');
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Edit',
+            submenu: [
+              {role: 'undo'},
+              {role: 'redo'},
+              {role: 'cut'},
+              {role: 'copy'},
+              {role: 'paste'},
+              {role: 'selectall'}
+            ]
+          },
+        {
+            role: 'window',
+            submenu: [
+                { role: 'minimize' },
+                { role: 'close' },
+            ]
+        }
+    ];
+
     if (DEBUG) {
-        const template: any[] = [
-            {
-                role: 'window',
-                submenu: [
-                    { role: 'minimize' },
-                    { role: 'close' }
-                ]
-            }
-        ];
-
-        template[0].submenu.push(
-            { role: 'reload' }
-        );
-        template[0].submenu.push(
-            { role: 'toggledevtools' }
-        );
-
-        const menu = Menu.buildFromTemplate(template);
-        Menu.setApplicationMenu(menu);
-    } else {
-        Menu.setApplicationMenu(null);
+        template[2].submenu.push({ role: 'reload' });
+        template[2].submenu.push({ role: 'toggledevtools' });
     }
+
+    if (process.platform === 'darwin') {
+        template.unshift({
+          label: app.getName(),
+          submenu: [
+            {role: 'about'},
+            {type: 'separator'},
+            {role: 'services', submenu: []},
+            {type: 'separator'},
+            {role: 'hide'},
+            {role: 'hideothers'},
+            {role: 'unhide'},
+            {type: 'separator'},
+            {role: 'quit'}
+          ]
+        })
+    }
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
 }
