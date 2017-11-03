@@ -1,0 +1,54 @@
+{
+  "name": "@stackfoundation/workflow-designer-electron",
+  "description": "StackFoundation Electron Workflow Designer app",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": "https://github.com/stackfoundation/workflow-designer-electron",
+  "author": "StackFoundation Limited",
+  "devDependencies": {
+    "@stackfoundation/workflow-designer": "^0.1.1",
+    "@types/node": "^8.0.24",
+    "@types/react": "^15.6.1",
+    "@types/react-dom": "^15.5.4",
+    "electron": "^1.7.8",
+    "electron-webpack": "^1.6.1",
+    "file-loader": "^0.11.2",
+    "mobx": "^3.2.1",
+    "mobx-react": "^4.2.2",
+    "react": "^15.6.1",
+    "react-codemirror2": "^3.0.6",
+    "react-dom": "^15.6.1",
+    "react-jss": "^7.2.0",
+    "ts-loader": "^2.3.3",
+    "typescript": "^2.5.1",
+    "jss": "^8.1.0",
+    "jss-compose": "^4.0.0",
+    "jss-nested": "^5.0.0"
+  },
+  "scripts": {
+    "desktop-dev": "electron-webpack dev",
+    "desktop-build": "electron-webpack",
+    "desktop-dist": "npm run desktop-build && electron-builder"
+  },
+  "build": {
+    "appId": "designer.stack.foundation",
+    "productName": "StackFoundation Designer",
+    "nsis": {
+      "perMachine": true
+    },
+    "fileAssociations": {
+      "ext": "wflow",
+      "name": "Workflow",
+      "description": "StackFoundation Workflow"
+    }
+  },
+  "electronWebpack": {
+    "commonSourceDirectory": "src/common",
+    "main": {
+      "sourceDirectory": "src/main"
+    },
+    "renderer": {
+      "sourceDirectory": "src/renderer"
+    }
+  }
+}

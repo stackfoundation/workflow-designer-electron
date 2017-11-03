@@ -1,0 +1,26 @@
+{
+    "compilerOptions": {
+      "baseUrl": "",
+      "target": "es5",
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "declaration": false,
+      "noImplicitAny": true,
+      "sourceMap": true,
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
+      "outDir": "build/",
+      "rootDir": ".",
+      "jsx":"react",
+      "skipLibCheck": true,
+      "types": ["node"],
+      "typeRoots": ["node_modules/@types"],
+      "lib": [ "es2015", "dom" ]
+    },
+    "compileOnSave": false,
+    "buildOnSave": false,
+    "include": [
+      "src"
+    ]
+  }
+  

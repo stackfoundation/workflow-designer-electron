@@ -4,14 +4,14 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { useStrict, observable } from 'mobx';
 import { observer } from 'mobx-react';
-let injectSheet = require('@tiagoroldao/react-jss').default;
+let injectSheet = require('react-jss').default;
 
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/theme/elegant.css';
 
-let jss: any = require('@tiagoroldao/react-jss').jss,
-    JssProvider: any = require('@tiagoroldao/react-jss').JssProvider,
-    ThemeProvider: any = require('@tiagoroldao/react-jss').ThemeProvider,
+let jss: any = require('react-jss/lib/jss').default,
+    JssProvider: any = require('react-jss').JssProvider,
+    ThemeProvider: any = require('react-jss').ThemeProvider,
     jssComposer: any = require('jss-compose').default,
     jssNested: any = require('jss-nested').default;
 
@@ -19,8 +19,8 @@ import 'purecss/build/pure.css';
 import 'purecss/build/grids-responsive.css';
 import './less/website.less';
 
-import { CustomInputIO } from '../../../../common/workflow-tools/workflow-editor/src/models/custom-input';
-import { WorkflowEditor } from '../../../../common/workflow-tools/workflow-editor/src/components/workflow-editor';
+import { CustomInputIO } from '@stackfoundation/workflow-designer/lib/models/custom-input';
+import { WorkflowEditor } from '@stackfoundation/workflow-designer/lib/components/workflow-editor';
 import { EditorBar } from './editor-bar';
 import { DesignerState } from './designer-state';
 
@@ -108,7 +108,7 @@ export class DesignerScreen extends React.Component<{ classes?: any }, {}> {
                     <CodeMirror
                         className={classes.editor}
                         value={this.designerState.yaml}
-                        onBeforeChange={(_, __, yaml: string) => this.designerState.updateYaml(yaml)}
+                        onBeforeChange={(_: any, __: any, yaml: string) => this.designerState.updateYaml(yaml)}
                         options={{ lineNumbers: true, mode: 'yaml', theme: 'elegant', indentWithTabs: false, tabSize: 2 }} />}
             </div>
         </div >;

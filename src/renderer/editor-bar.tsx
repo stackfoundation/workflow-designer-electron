@@ -3,7 +3,7 @@ import * as fs from 'fs';
 
 import { observer } from 'mobx-react';
 import * as React from 'react';
-let injectSheet = require('@tiagoroldao/react-jss').default;
+let injectSheet = require('react-jss').default;
 const Open = require('react-icons/lib/fa/folder-open-o');
 const Save = require('react-icons/lib/fa/floppy-o');
 

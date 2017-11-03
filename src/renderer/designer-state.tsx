@@ -4,11 +4,11 @@ var electron = require('electron');
 import { action, autorun, observable } from 'mobx';
 import * as React from 'react';
 
-import { EditorState } from '../../../../common/workflow-tools/workflow-editor/src/models/state';
-import { CatalogImage } from '../../../../common/workflow-tools/workflow-editor/src/models/catalog';
-import { Workflow, WorkflowStepSimple } from '../../../../common/workflow-tools/workflow-editor/src/models/workflow';
-import { WorkflowService } from '../../../../common/workflow-tools/workflow-editor/src/services/workflow_service';
-import { saveWorkflow, loadWorkflow } from '../../../../common/workflow-tools/workflow-loader/workflow-loader';
+import { EditorState } from '@stackfoundation/workflow-designer/lib/models/state';
+import { CatalogImage } from '@stackfoundation/workflow-designer/lib/models/catalog';
+import { Workflow, WorkflowStepSimple } from '@stackfoundation/workflow-designer/lib/models/workflow';
+import { WorkflowService } from '@stackfoundation/workflow-designer/lib/services/workflow_service';
+import { saveWorkflow, loadWorkflow } from '../workflow-loader';
 import { StepCodeEditor } from './step-code-editor';
 
 const scriptEditorFactory = (step: WorkflowStepSimple, fieldName: string) =>
