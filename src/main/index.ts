@@ -1,15 +1,19 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { enableLiveReload } from 'electron-compile';
 
 import { initMenu } from './menu';
 
 let mainWindow: Electron.BrowserWindow | null = null;
 
-const isDevMode = process.execPath.match(/[\\/]electron/);
+let fileDirty = false;
 
-if (isDevMode) {
+import { IS_DEV_MODE } from './constants';
+
+if (IS_DEV_MODE) {
   // enableLiveReload({strategy: 'react-hmr'});
 }
+
+app.setName('StackFoundation Workflow Designer');
 
 const createWindow = async () => {
   initMenu();
@@ -17,7 +21,7 @@ const createWindow = async () => {
   mainWindow = new BrowserWindow({
     show: false,
     minWidth: 600,
-    titleBarStyle: 'hidden-inset'
+    title: "StackFoundation Workflow Designer"
   });
   mainWindow.setMaximumSize(10000, 10000);
   mainWindow.setMinimumSize(400, 400);
@@ -25,7 +29,7 @@ const createWindow = async () => {
   
   (mainWindow as any).args = process.argv;
 
-  let url = isDevMode
+  let url = IS_DEV_MODE
     ? 'http://localhost:9080'
     : `file://${__dirname}/index.html`;
 
@@ -34,7 +38,7 @@ const createWindow = async () => {
       mainWindow.show();
   });
 
-  if (isDevMode) {
+  if (IS_DEV_MODE) {
     mainWindow.webContents.openDevTools();
   }
 
@@ -42,6 +46,10 @@ const createWindow = async () => {
     mainWindow = null;
   });
 };
+
+ipcMain.on('quit', (event:any) => {
+  app.quit();
+})
 
 app.on('ready', createWindow);
 

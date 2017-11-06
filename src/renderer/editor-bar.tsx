@@ -3,12 +3,12 @@ import * as fs from 'fs';
 
 import { observer } from 'mobx-react';
 import * as React from 'react';
+import { UIState } from 'src/renderer/designer-state';
+import { action } from 'mobx';
 let injectSheet = require('react-jss').default;
+const New = require('react-icons/lib/fa/file-o');
 const Open = require('react-icons/lib/fa/folder-open-o');
 const Save = require('react-icons/lib/fa/floppy-o');
-
-var electron = require('electron');
-var currentWindow = electron.remote.getCurrentWindow();
 
 const styles = (theme: any) => ({
     editorBar: {
@@ -18,7 +18,8 @@ const styles = (theme: any) => ({
     editorBarInner: {
         composes: 'pure-menu-heading',
         fontWeight: '700',
-        width: '100%'
+        width: '100%',
+        background: 'white'
     },
     projectMenu: {
         composes: 'pure-menu-list'
@@ -38,7 +39,11 @@ const styles = (theme: any) => ({
         composes: 'pure-menu-item pure-menu-selected'
     },
     menuLink: {
-        composes: 'pure-menu-link'
+        composes: 'pure-menu-link',
+
+        '&:focus': {
+            background: 'none'
+        }
     },
     menuNonLink: {
         composes: 'pure-menu-link',
@@ -54,89 +59,19 @@ const styles = (theme: any) => ({
 
 interface BarProps {
     classes?: any;
+    uiState: UIState;
     modeChanged?: (yaml: boolean) => void;
-    workflowOpened?: (workflow: string) => void;
+    openWorkflow?: (workflow?: string) => void;
+    newWorkflow?: () => void;
     save?: () => void;
     dirty: boolean;
 }
 
-interface BarState {
-    projectName: string;
-    projectPath: string;
-    projectWorkflows: string[];
-    workflowName: string;
-    yaml: boolean;
-}
-
 @injectSheet(styles)
 @observer
-export class EditorBar extends React.Component<BarProps, BarState> {
+export class EditorBar extends React.Component<BarProps> {
     constructor(props: BarProps) {
         super(props);
-    }
-
-    componentWillMount() {
-        this.setState({});
-    }
-
-    public componentDidMount() {
-        if ((currentWindow as any).args) {
-            let args = (currentWindow as any).args;
-            if (args.length && args.length > 1) {
-                try {
-                    if (fs.statSync(args[1]).isFile()) {
-                        this.openWorkflow(args[1]);
-                    }
-                } catch (e) { }
-            }
-        }
-    }
-
-    private listProjectWorkflows(projectDirectory: string): string[] {
-        let children = fs.readdirSync(projectDirectory);
-        if (children && children.length > 0) {
-            children = children
-                .filter(workflow => workflow && workflow.endsWith('.wflow'))
-                .map(workflow => workflow.substring(0, workflow.length - 6));
-        }
-
-        return children;
-    }
-
-    private openWorkflow(workflow: string) {
-        if (workflow) {
-            let project = path.dirname(workflow);
-            let children: string[] = [];
-            if (path.basename(project) == 'workflows') {
-                children = this.listProjectWorkflows(project);
-                project = path.dirname(project);
-            }
-
-            let projectName = path.basename(project);
-
-            let workflowName = path.basename(workflow);
-            if (workflowName.endsWith('.wflow')) {
-                workflowName = workflowName.substring(0, workflowName.length - 6);
-            }
-
-            this.setState({
-                workflowName: workflowName,
-                projectPath: project,
-                projectName: projectName,
-                projectWorkflows: children
-            });
-
-            if (this.props.workflowOpened) {
-                this.props.workflowOpened(workflow);
-            }
-        }
-    }
-
-    private openProjectWorkflow(workflow: string) {
-        if (workflow && this.state) {
-            let workflowPath = path.join(this.state.projectPath, 'workflows', workflow + '.wflow');
-            this.openWorkflow(workflowPath);
-        }
     }
 
     private save(e: React.MouseEvent<HTMLSpanElement>) {
@@ -147,41 +82,43 @@ export class EditorBar extends React.Component<BarProps, BarState> {
         e.preventDefault();
     }
 
+    private blankNew(e: React.MouseEvent<HTMLSpanElement>) {
+        if (this.props.newWorkflow) {
+            this.props.newWorkflow();
+        }
+
+        e.preventDefault();
+    }
+
     private openNew(e: React.MouseEvent<HTMLSpanElement>) {
-        let path = electron.remote.dialog.showOpenDialog(currentWindow,
-            {
-                title: "Open workflow",
-                filters: [
-                    { name: 'Workflows', extensions: ['wflow'] }
-                ]
-            });
-        if (path && path.length > 0) {
-            this.openWorkflow(path[0]);
+        if (this.props.openWorkflow) {
+            this.props.openWorkflow();
         }
 
         e.preventDefault();
     }
 
     private openExisting(workflow: string, e: React.MouseEvent<HTMLAnchorElement>) {
-        this.openProjectWorkflow(workflow);
+        if (this.props.openWorkflow) {
+            this.props.openWorkflow(path.join(this.props.uiState.projectPath,workflow + '.wflow'));
+        }
         e.preventDefault();
     }
 
     private get multipleWorkflows(): boolean {
-        return this.state && this.state.projectWorkflows && this.state.projectWorkflows.length > 1;
+        return this.props.uiState && this.props.uiState.projectWorkflows && this.props.uiState.projectWorkflows.length > 1;
     }
 
     private get existingWorkflow(): boolean {
-        return this.state && this.state.projectPath && this.state.projectPath.length > 0;
+        return this.props.uiState && this.props.uiState.projectPath && this.props.uiState.projectPath.length > 0;
     }
 
     private get yamlMode(): boolean {
-        return this.state && this.state.yaml;
+        return this.props.uiState && this.props.uiState.yaml;
     }
 
+    @action
     private setMode(e: React.MouseEvent<HTMLAnchorElement>, yaml: boolean) {
-        this.setState({ yaml: yaml });
-
         if (this.props.modeChanged) {
             this.props.modeChanged(yaml);
         }
@@ -194,24 +131,43 @@ export class EditorBar extends React.Component<BarProps, BarState> {
         return <div className={classes.editorBar}>
             <div className={classes.editorBarInner}>
                 <ul className={classes.projectMenu}>
+                <li className={classes.menuItem}>
+                        <a href="#" className={classes.menuLink} onClick={e => this.blankNew(e)}>
+                            <New />
+                        </a>
+                    </li>
                     <li className={classes.menuItem}>
                         <a href="#" className={classes.menuLink} onClick={e => this.openNew(e)}>
                             <Open />
                         </a>
                     </li>
                     {this.existingWorkflow && <li className={classes.menuItem}>
-                        {this.state &&
-                            <span title={this.state.projectPath} className={classes.menuNonLink}>
-                                {this.state.projectName} &gt;&nbsp;
+                        {this.props.uiState &&
+                            <span title={this.props.uiState.projectPath} className={classes.menuNonLink}>
+                                {this.props.uiState.projectName} &gt;&nbsp;
+                            </span>}
+                    </li>}
+                    {!this.existingWorkflow && <li className={classes.menuItem}>
+                        {this.props.uiState &&
+                            <span title={this.props.uiState.projectPath} className={classes.menuNonLink}>
+                                New Workflow
+                                {this.props.dirty && <span>*</span>}
                             </span>}
                     </li>}
                     {this.existingWorkflow && <li className={this.multipleWorkflows ? classes.menuItemWithChildren : classes.menuItem}>
-                        <a href="#" className={classes.menuLink}>
-                            {this.state.workflowName}
-                        </a>
+                        {this.multipleWorkflows &&
+                            <a href="#" className={classes.menuLink}>
+                                {this.props.uiState.workflowName}
+                                {this.existingWorkflow && this.props.dirty && <span>*</span>}
+                            </a>}
+                        {!this.multipleWorkflows &&
+                            <span title={this.props.uiState.projectPath} className={classes.menuNonLink}>
+                                {this.props.uiState.workflowName}
+                                {this.existingWorkflow && this.props.dirty && <span>*</span>}
+                            </span>}
                         {this.multipleWorkflows &&
                             <ul className="pure-menu-children">
-                                {this.state.projectWorkflows.map((workflow, i) =>
+                                {this.props.uiState.projectWorkflows.map((workflow, i) =>
                                     <li className={classes.menuItem} key={'wflow-' + i}>
                                         <a href="#" onClick={e => this.openExisting(workflow, e)} className={classes.menuLink}>
                                             {workflow}
@@ -219,12 +175,6 @@ export class EditorBar extends React.Component<BarProps, BarState> {
                                     </li>)}
                             </ul>}
                     </li>}
-                    {this.existingWorkflow && this.props.dirty &&
-                        <li className={classes.menuItem}>
-                            <span title={this.state.projectPath} className={classes.menuNonLink}>
-                                (modified)
-                            </span>
-                        </li>}
                     {this.props.dirty &&
                         <li className={classes.menuItem}>
                             <a href="#" className={classes.menuLink} onClick={e => this.save(e)}>
